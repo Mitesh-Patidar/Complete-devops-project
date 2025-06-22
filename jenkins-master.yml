@@ -1,3 +1,4 @@
+#This playbook download older version of jenkins
 ---
 - name: Install Jenkins via RPM (safe for Amazon Linux 2)
   hosts: jenkins-master
