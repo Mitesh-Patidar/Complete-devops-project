@@ -1,0 +1,61 @@
+---
+hosts: jenkins-agent
+become: yes
+vars:
+    maven_version: "3.9.10"
+    maven_dir: "apache-maven-3.9.10"
+    maven_url: "https://dlcdn.apache.org/maven/maven-3/3.9.10/binaries/apache-maven-3.9.10-bin.tar.gz"
+
+tasks:
+  - name: Install Java and Git
+    yum:
+      name:
+        - java-17-amazon-corretto-devel
+        - git
+      state: present
+
+  - name: Install docker
+    yum:
+      name: docker
+      state: present
+
+  - name: enable and start docker
+    service:
+      name: docker
+      state: started
+      enabled: true
+
+  - name: add ec2-user to docker group
+    user:
+      name: ec2-user
+      groups: docker
+      append: yes
+
+  - name: Download Maven
+    get_url:
+      url: "{{ maven_url }}"
+      dest: /tmp/{{maven_dir}}.tar.gz
+      mode: '0644'
+
+  - name: Extract maven
+    unarchive:
+      src: /tmp/{{maven_dir}}.tar.gz
+      dest: /opt
+      remote_src: yes
+
+  - name: Create symlink
+    file:
+      src: /opt/{{maven_dir}}
+      dest: /opt/maven
+      state: link
+      force: yes
+
+  - name: Create Maven environment profile script
+    copy:
+      dest: /etc/profile.d/maven.sh
+      content: |
+        export M2_HOME=/opt/maven
+        export MAVEN_HOME=/opt/maven
+        export PATH=${M2_HOME}/bin:${PATH}
+      mode: '0755'
+
