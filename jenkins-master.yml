@@ -1,41 +1,29 @@
 ---
-- hosts: jenkins-master
+- name: Install Jenkins via RPM (safe for Amazon Linux 2)
+  hosts: jenkins-master
   become: yes
   tasks:
-    - name: Install Java 17
+    - name: Install dependencies
       yum:
-        name: java-17-amazon-corretto-devel
+        name:
+          - java-17-amazon-corretto-devel
+          - git
+          - wget
         state: present
 
+    - name: Download Jenkins RPM
+      get_url:
+        url: https://pkg.jenkins.io/redhat-stable/jenkins-2.426.1-1.1.noarch.rpm
+        dest: /tmp/jenkins.rpm
 
-    - name: Add jenkins repo
-      yum_repository:
-        name: jenkins
-        desctiption: Jenkins-stable
-        baseurl: https://pkg.jenkins.io/redhat-stable/jenkins.repo
-        gpgcheck: yes
-        gpgkey: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-
-    - name: Install Jenkins
+    - name: Install Jenkins from RPM
       yum:
-        name: jenkins
+        name: /tmp/jenkins.rpm
         state: present
 
-    - name: enable and start jenkins
+    - name: Enable and start Jenkins
       service:
         name: jenkins
+        enabled: yes
         state: started
-        enabled: true
-
-    - name: open firewall for jenkins
-      firewalld:
-        port: 8080/tcp
-        permanent: yes
-        state: enabled
-      when: ansible_facts.os_family == "RedHat"
-
-    - name: reload firewall
-      command: firewall-cmd --reload
-      when: ansible_facts.os_family == "RedHat"
-
 
